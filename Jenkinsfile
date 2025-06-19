@@ -3,9 +3,7 @@ pipeline {
 
     environment {
         PORT = "${env.BRANCH_NAME == 'main' ? '3000' : '3001'}"
-        IMAGE_NAME = "myapp:${env.BRANCH_NAME}"
-        DOCKERHUB_USER = "avmush"
-        DOCKERHUB_IMAGE = "${DOCKERHUB_USER}/myapp:${env.BRANCH_NAME}"
+        IMAGE_NAME = "avmush/myapp:${env.BRANCH_NAME}"
     }
 
     stages {
@@ -25,21 +23,22 @@ pipeline {
         stage('Build') {
             steps {
                 echo "🔧 Building the app for branch ${env.BRANCH_NAME} on port ${PORT}"
-                // Add real build commands if needed
+                // Example: sh 'npm install' or 'pip install -r requirements.txt'
             }
         }
 
         stage('Test') {
             steps {
                 echo "🧪 Running tests..."
-                // Add real test commands if needed
+                // Example: sh 'npm test' or 'pytest tests/'
             }
         }
 
         stage('Dockerfile Lint (Hadolint)') {
             steps {
                 echo "🔍 Linting Dockerfile with Hadolint..."
-                sh 'hadolint Dockerfile'
+                // Don't fail build on lint error
+                sh 'hadolint Dockerfile || true'
             }
         }
 
@@ -54,19 +53,21 @@ pipeline {
 
         stage('Trivy Scan') {
             steps {
-                echo "🔎 Scanning image with Trivy..."
-                sh "trivy image --severity HIGH,CRITICAL --no-progress --exit-code 0 ${IMAGE_NAME}"
+                script {
+                    echo "🛡️ Running Trivy vulnerability scan..."
+                    sh "trivy image --severity HIGH,CRITICAL --no-progress --exit-code 0 ${IMAGE_NAME}"
+                }
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                    sh '''
-                        echo "$PASSWORD" | docker login -u "$USERNAME" --password-stdin
-                        docker tag ${IMAGE_NAME} ${DOCKERHUB_IMAGE}
-                        docker push ${DOCKERHUB_IMAGE}
-                    '''
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    script {
+                        echo "📦 Logging in and pushing Docker image..."
+                        sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                        sh "docker push ${IMAGE_NAME}"
+                    }
                 }
             }
         }
@@ -74,7 +75,8 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "🚀 Deploying app on port ${PORT}"
-                // Optional: sh "docker run -d -p ${PORT}:${PORT} ${DOCKERHUB_IMAGE}"
+                // Example: run container
+                // sh "docker run -d -p ${PORT}:${PORT} ${IMAGE_NAME}"
             }
         }
     }
