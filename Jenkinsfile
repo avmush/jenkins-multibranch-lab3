@@ -1,4 +1,3 @@
-mavetisyan@AMWFAMLTL-A0233:~/epam/lab3/jenkins-multibranch-lab3$ cat Jenkinsfile 
 pipeline {
     agent any
 
