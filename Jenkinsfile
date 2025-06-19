@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'docker:latest'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent any
 
     environment {
         PORT = "${env.BRANCH_NAME == 'main' ? '3000' : '3001'}"
@@ -51,7 +46,8 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "🚀 Deploying app on port ${PORT}"
-                // Optional: sh "docker run -d -p ${PORT}:${PORT} myapp:${env.BRANCH_NAME}"
+                // Optional: run the container
+                // sh "docker run -d -p ${PORT}:${PORT} myapp:${env.BRANCH_NAME}"
             }
         }
     }
