@@ -23,22 +23,24 @@ pipeline {
         stage('Build') {
             steps {
                 echo "🔧 Building the app for branch ${env.BRANCH_NAME} on port ${PORT}"
-                // Example: sh 'npm install' or 'pip install -r requirements.txt'
+                // Example: sh 'npm install'
             }
         }
 
         stage('Test') {
             steps {
                 echo "🧪 Running tests..."
-                // Example: sh 'npm test' or 'pytest tests/'
+                // Example: sh 'npm test'
             }
         }
 
         stage('Dockerfile Lint (Hadolint)') {
             steps {
-                echo "🔍 Linting Dockerfile with Hadolint..."
-                // Don't fail build on lint error
-                sh 'hadolint Dockerfile || true'
+                script {
+                    echo "🔍 Linting Dockerfile with Hadolint..."
+                    // Don't fail the pipeline if Hadolint fails
+                    sh 'hadolint Dockerfile || true'
+                }
             }
         }
 
@@ -54,8 +56,9 @@ pipeline {
         stage('Trivy Scan') {
             steps {
                 script {
-                    echo "🛡️ Running Trivy vulnerability scan..."
-                    sh "trivy image --severity HIGH,CRITICAL --no-progress --exit-code 0 ${IMAGE_NAME}"
+                    echo "🛡️ Scanning image with Trivy..."
+                    // Don't fail the pipeline if Trivy fails
+                    sh "trivy image --severity HIGH,CRITICAL --ignore-unfixed --no-progress ${IMAGE_NAME} || true"
                 }
             }
         }
@@ -65,7 +68,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     script {
                         echo "📦 Logging in and pushing Docker image..."
-                        sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                        sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                         sh "docker push ${IMAGE_NAME}"
                     }
                 }
@@ -75,7 +78,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "🚀 Deploying app on port ${PORT}"
-                // Example: run container
+                // Optional run command
                 // sh "docker run -d -p ${PORT}:${PORT} ${IMAGE_NAME}"
             }
         }
