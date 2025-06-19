@@ -1,57 +1,56 @@
 pipeline {
-    agent any
+  agent any
 
-    environment {
-        IMAGE_NAME = "nodeapp"
-        PORT = (env.BRANCH_NAME == 'main') ? '3000' : '3001'
+  environment {
+    PORT = '' // Will be set later in script block
+  }
+
+  stages {
+    stage('Set Port') {
+      steps {
+        script {
+          env.PORT = (env.BRANCH_NAME == 'main') ? '3000' : '3001'
+        }
+        echo "✅ Selected port: ${env.PORT}"
+      }
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Build') {
-            steps {
-                script {
-                    sh 'npm install'
-                }
-            }
-        }
-
-        stage('Test') {
-            steps {
-                script {
-                    sh 'npm test || true' // or your test command
-                }
-            }
-        }
-
-        stage('Docker Build') {
-            steps {
-                script {
-                    sh "docker build -t ${IMAGE_NAME}:${env.BRANCH_NAME} ."
-                }
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                script {
-                    // stop any existing container on that port
-                    sh "docker ps -q --filter 'publish=${PORT}' | xargs -r docker stop || true"
-                    // run app with port
-                    sh "docker run -d -p ${PORT}:3000 --name ${env.BRANCH_NAME}_container ${IMAGE_NAME}:${env.BRANCH_NAME}"
-                }
-            }
-        }
+    stage('Checkout') {
+      steps {
+        checkout scm
+        echo "✅ Checked out branch: ${env.BRANCH_NAME}"
+      }
     }
 
-    post {
-        always {
-            echo "Pipeline completed for branch ${env.BRANCH_NAME}"
-        }
+    stage('Build') {
+      steps {
+        echo "🔧 Building the app for branch ${env.BRANCH_NAME} on port ${env.PORT}"
+        // Example: npm install or mvn build, depending on your app
+      }
     }
+
+    stage('Test') {
+      steps {
+        echo "🧪 Running tests..."
+        // Example: npm test or mvn test
+      }
+    }
+
+    stage('Build Docker Image') {
+      steps {
+        script {
+          dockerImage = docker.build("myapp:${env.BRANCH_NAME}")
+        }
+        echo "🐳 Built Docker image: myapp:${env.BRANCH_NAME}"
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        echo "🚀 Deploying to port ${env.PORT}..."
+        // Example: docker run -d -p ${env.PORT}:${env.PORT} myapp:${env.BRANCH_NAME}
+      }
+    }
+  }
 }
+
