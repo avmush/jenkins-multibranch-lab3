@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'docker:latest'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     environment {
         PORT = "${env.BRANCH_NAME == 'main' ? '3000' : '3001'}"
@@ -22,14 +27,14 @@ pipeline {
         stage('Build') {
             steps {
                 echo "🔧 Building the app for branch ${env.BRANCH_NAME} on port ${PORT}"
-                // Add your build commands here, e.g., npm install
+                // Example: sh 'npm install'
             }
         }
 
         stage('Test') {
             steps {
                 echo "🧪 Running tests..."
-                // Add your test commands here, e.g., npm test
+                // Example: sh 'npm test'
             }
         }
 
@@ -46,7 +51,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "🚀 Deploying app on port ${PORT}"
-                // Example run (optional): sh "docker run -d -p ${PORT}:${PORT} myapp:${env.BRANCH_NAME}"
+                // Optional: sh "docker run -d -p ${PORT}:${PORT} myapp:${env.BRANCH_NAME}"
             }
         }
     }
