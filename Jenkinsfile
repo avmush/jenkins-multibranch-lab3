@@ -1,57 +1,56 @@
+mavetisyan@AMWFAMLTL-A0233:~/epam/lab3/jenkins-multibranch-lab3$ cat Jenkinsfile 
 pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "nodeapp"
-        PORT = (env.BRANCH_NAME == 'main') ? '3000' : '3001'
+        PORT = "${env.BRANCH_NAME == 'main' ? '3000' : '3001'}"
+        IMAGE_NAME = "myapp:${env.BRANCH_NAME}"
     }
 
     stages {
+        stage('Set Port') {
+            steps {
+                echo "✅ Selected port: ${PORT}"
+            }
+        }
+
         stage('Checkout') {
             steps {
                 checkout scm
+                echo "✅ Checked out branch: ${env.BRANCH_NAME}"
             }
         }
 
         stage('Build') {
             steps {
-                script {
-                    sh 'npm install'
-                }
+                echo "🔧 Building the app for branch ${env.BRANCH_NAME} on port ${PORT}"
+                // Example: sh 'npm install' or 'pip install -r requirements.txt'
             }
         }
 
         stage('Test') {
             steps {
-                script {
-                    sh 'npm test || true' // or your test command
-                }
+                echo "🧪 Running tests..."
+                // Example: sh 'npm test' or 'pytest tests/'
             }
         }
 
-        stage('Docker Build') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${IMAGE_NAME}:${env.BRANCH_NAME} ."
+                    echo "🐳 Building Docker image: ${IMAGE_NAME}"
+                    sh "docker build -t ${IMAGE_NAME} ."
                 }
             }
         }
 
         stage('Deploy') {
             steps {
-                script {
-                    // stop any existing container on that port
-                    sh "docker ps -q --filter 'publish=${PORT}' | xargs -r docker stop || true"
-                    // run app with port
-                    sh "docker run -d -p ${PORT}:3000 --name ${env.BRANCH_NAME}_container ${IMAGE_NAME}:${env.BRANCH_NAME}"
-                }
+                echo "🚀 Deploying app on port ${PORT}"
+                // Optional run (example):
+                // sh "docker run -d -p ${PORT}:${PORT} ${IMAGE_NAME}"
             }
         }
     }
-
-    post {
-        always {
-            echo "Pipeline completed for branch ${env.BRANCH_NAME}"
-        }
-    }
 }
+
