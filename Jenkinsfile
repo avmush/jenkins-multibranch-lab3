@@ -38,7 +38,6 @@ pipeline {
             steps {
                 script {
                     echo "🔍 Linting Dockerfile with Hadolint..."
-                    // Don't fail the pipeline if Hadolint fails
                     sh 'hadolint Dockerfile || true'
                 }
             }
@@ -57,7 +56,6 @@ pipeline {
             steps {
                 script {
                     echo "🛡️ Scanning image with Trivy..."
-                    // Don't fail the pipeline if Trivy fails
                     sh "trivy image --severity HIGH,CRITICAL --ignore-unfixed --no-progress ${IMAGE_NAME} || true"
                 }
             }
@@ -68,7 +66,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     script {
                         echo "📦 Logging in and pushing Docker image..."
-                        sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                        sh """echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin"""
                         sh "docker push ${IMAGE_NAME}"
                     }
                 }
@@ -78,9 +76,15 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "🚀 Deploying app on port ${PORT}"
-                // Optional run command
                 // sh "docker run -d -p ${PORT}:${PORT} ${IMAGE_NAME}"
             }
+        }
+    }
+
+    post {
+        always {
+            echo "🧹 Cleaning up workspace..."
+            cleanWs()
         }
     }
 }
